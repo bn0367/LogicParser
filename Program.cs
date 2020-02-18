@@ -5,11 +5,7 @@ using static LogicParser.Operator;
 
 namespace LogicParser
 {
-    enum Operators
-    {
-        OR, AND, IMPLIES
-    }
-
+    enum Operators { OR, AND, IMPLIES }
 
     class Program
     {
@@ -59,7 +55,7 @@ namespace LogicParser
 
         }
 
-        internal List<Dictionary<string, bool>> _TruthTable()
+        internal List<Dictionary<string, bool>> BasicTruthTable()
         {
             List<string> vars = string.Concat(ToString().Where(e => !"-~()v>^".Contains(e))).Split().Where(e => e != string.Empty).Distinct().ToList();
             List<Dictionary<string, bool>> r = new List<Dictionary<string, bool>>();
@@ -102,7 +98,7 @@ namespace LogicParser
 
         public List<Dictionary<string, bool>> TruthTable(List<Dictionary<string, bool>> table = null)
         {
-            if (table == null) table = _TruthTable();
+            if (table == null) table = BasicTruthTable();
 
             if (HasOperator)
             {
@@ -152,6 +148,7 @@ namespace LogicParser
                     }
                 }
             }
+
             var first = exp.Split(">", 2);
             if (first.Length == 1)
             {
