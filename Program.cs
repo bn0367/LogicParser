@@ -19,6 +19,7 @@ namespace LogicParser
             {
                 Console.WriteLine("Enter a logical expression: ");
                 Expression l = Expression.Parse(Console.ReadLine());
+                Console.WriteLine();
                 l.PrintTable();
                 Console.WriteLine();
             }
