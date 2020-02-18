@@ -3,4 +3,5 @@ Logical Expression Parser
 
 yeah
 
-just build it with .NET Core 3+ (just use vs)
+.net core 3.1
+use vs2019
