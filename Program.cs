@@ -236,6 +236,7 @@ namespace LogicParser
                 left = Left.not ? !left : left;
                 bool right = Right.Evaluate(vars);
                 right = Right.not ? !right : right;
+
                 return op switch
                 {
                     Operators.AND => left && right,
