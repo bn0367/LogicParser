@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using static LogicParser.Operator;
@@ -120,36 +120,42 @@ namespace LogicParser
                 throw new ArgumentException("Invalid Expression");
             }
             int pos = exp.IndexOf("(");
-            int depth = 0;
-            bool foundOne = false;
-            for (int i = 0; i < exp.Length; i++)
+            var first = exp.Split('>');
+            if(first.Length > 1)
             {
-                if (exp[i] == '(')
+                return new Expression(Parse(first[0]), IMPLIES, Parse(first[1]));
+            }
+            if (pos != -1)
+            {
+                int depth = 0;
+                bool foundOne = false;
+                for (int i = 0; i < exp.Length; i++)
                 {
-                    foundOne = true;
-                    depth++;
-                }
-                if (exp[i] == ')')
-                {
-                    depth--;
-                }
-                if (depth == 0 && foundOne)
-                {
-                    if (i + 2 < exp.Length)
+                    if (exp[i] == '(')
                     {
-                        var left = exp[1..i];
-                        var right = exp[(i + 2)..];
-                        var op = new Operator(exp.Substring(i + 1, 1)[0]);
-                        return new Expression(Parse(left), op, Parse(right));
+                        foundOne = true;
+                        depth++;
                     }
-                    else
+                    if (exp[i] == ')')
                     {
-                        return Parse(exp[1..i]);
+                        depth--;
+                    }
+                    if (depth == 0 && foundOne)
+                    {
+                        if (i + 2 < exp.Length)
+                        {
+                            var left = exp[1..i];
+                            var right = exp[(i + 2)..];
+                            var op = new Operator(exp.Substring(i + 1, 1)[0]);
+                            return new Expression(Parse(left), op, Parse(right));
+                        }
+                        else
+                        {
+                            return Parse(exp[1..i]);
+                        }
                     }
                 }
             }
-
-            var first = exp.Split(">", 2);
             if (first.Length == 1)
             {
                 if (exp.Split("^").Length > 1 && exp.Split("v").Length > 1)
@@ -174,7 +180,7 @@ namespace LogicParser
             }
             else
             {
-                return new Expression(Parse(first[0]), IMPLIES, Parse(first[1]));
+                throw new Exception("literally how this is not possible (length of array < 1)");
             }
 
 
