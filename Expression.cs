@@ -2,24 +2,31 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using static LogicParser.Operator;
 
 namespace LogicParser
 {
     class Expression
     {
-        public bool HasOperator;
-        public bool not;
-        public Operator op;
-        public Expression Left;
-        public Expression Right;
-        public string variable;
+        public readonly bool HasOperator;
+        public readonly bool not;
+        public readonly Operator op;
+        public readonly Expression Left;
+        public readonly Expression Right;
+        public readonly string variable;
+        public readonly List<Dictionary<string, bool>> TTable;
+        public readonly List<Dictionary<string, bool>> GTable;
+        public readonly List<Dictionary<string, bool>> BTable;
 
         public Expression(string v, bool n = false)
         {
             HasOperator = false;
             variable = v;
             not = n;
+            BTable = BasicTruthTable();
+            TTable = TruthTable(generic: false);
+            GTable = TruthTable(generic: true);
         }
         public Expression(Expression l, Operator o, Expression r, bool n = false)
         {
@@ -28,6 +35,9 @@ namespace LogicParser
             Right = r;
             not = n;
             HasOperator = true;
+            BTable = BasicTruthTable();
+            TTable = TruthTable(generic: false);
+            GTable = TruthTable(generic: true);
         }
         public bool Evaluate(Dictionary<string, bool> vars)
         {
@@ -57,16 +67,18 @@ namespace LogicParser
 
         public void PrintTable(List<Dictionary<string, bool>> table = null)
         {
-            if (table == null) table = TruthTable();
+            if (table == null) { table = TTable; }
+            StringBuilder output = new StringBuilder();
             foreach (Dictionary<string, bool> row in table)
             {
                 foreach (KeyValuePair<string, bool> variable in row)
                 {
                     var t = variable.Value ? "T" : "F";
-                    Console.Write($"{variable.Key}: {t} | ", Encoding.Unicode);
+                    output.Append($"{variable.Key}: {t} | ");
                 }
-                Console.WriteLine();
+                output.Append("\n");
             }
+            Console.WriteLine(output);
         }
 
         public override string ToString()
@@ -80,15 +92,15 @@ namespace LogicParser
             return (lParen ? "(" : "") + Left.ToString() + (lParen ? ") " : " ") + op + (rParen ? " (" : " ") + Right.ToString() + (lParen ? ")" : "");
         }
 
-        public List<Dictionary<string, bool>> TruthTable(List<Dictionary<string, bool>> table = null, bool generic = false)
+        internal List<Dictionary<string, bool>> TruthTable(bool generic = false, List < Dictionary<string, bool>> table = null)
         {
             if (table == null) table = BasicTruthTable();
             if (!generic)
             {
                 if (HasOperator)
                 {
-                    table = Left.TruthTable(table);
-                    table = Right.TruthTable(table);
+                    table = Left.TruthTable(false, table);
+                    table = Right.TruthTable(false, table);
                 }
             }
             foreach (var row in table)
@@ -207,7 +219,7 @@ namespace LogicParser
         {
             if (!(obj is Expression)) return false;
             Expression other = obj as Expression;
-            if (!TableEquals(TruthTable(generic: true), other.TruthTable(generic: true))) return false;
+            if (!TableEquals(GTable, other.GTable)) return false;
 
             return true;
         }
@@ -244,6 +256,15 @@ namespace LogicParser
         public override int GetHashCode()
         {
             return HashCode.Combine(HasOperator, not, op, Left, Right, variable);
+        }
+
+        public static Expression RandomExpression(int length = 1)
+        {
+            var ops = new string[] { "^", "v", ">", "\\", "/", "+" };
+            var vars = new string[] { "p", "q", "r", "s", "t", "u" };
+            var ran = new Random();
+            if (length <= 1) return Parse(vars[ran.Next(vars.Length)] + " " + ops[ran.Next(ops.Length)] + " " + vars[ran.Next(vars.Length)]);
+            else return new Expression(Parse(vars[ran.Next(vars.Length)] + " " + ops[ran.Next(ops.Length)] + " " + vars[ran.Next(vars.Length)]), new Operator(ops[ran.Next(ops.Length)][0]), RandomExpression(--length));
         }
     }
 }

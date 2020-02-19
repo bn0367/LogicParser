@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Text;
-
+using static LogicParser.Operator;
 namespace LogicParser
 {
 
@@ -8,15 +8,9 @@ namespace LogicParser
     {
         static void Main(string[] _)
         {
-            
-            while (true)
-            {
-                Console.WriteLine("Enter a logical expression: ");
-                Expression l = Expression.Parse(Console.ReadLine());
-                Console.WriteLine();
-                l.PrintTable();
-                Console.WriteLine();
-            }
+            var e = Expression.RandomExpression(100);
+            e.PrintTable(e.GTable);
+            Console.WriteLine();
         }
     }
 }
