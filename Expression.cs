@@ -12,9 +12,9 @@ namespace LogicParser
         public Operator op;
         public Expression Left;
         public Expression Right;
-        public char variable;
+        public string variable;
 
-        public Expression(char v, bool n = false)
+        public Expression(string v, bool n = false)
         {
             HasOperator = false;
             variable = v;
@@ -47,7 +47,7 @@ namespace LogicParser
                 Dictionary<string, bool> row = new Dictionary<string, bool>();
                 for (int j = 0; j < vars.Count; j++)
                 {
-                    row.Add(vars[j], (i & (1 << j)) != 0);
+                    row.Add(vars[j], (i & (1 << j)) == 0);
                 }
                 r.Add(row);
             }
@@ -159,7 +159,7 @@ namespace LogicParser
                 }
                 else
                 {
-                    return new Expression(exp[0]);
+                    return new Expression(exp);
                 }
 
             }
@@ -176,14 +176,14 @@ namespace LogicParser
             if (ss.Count() == 1)
             {
                 if (ss.First()[0] == '~')
-                    return new Expression(ss.First()[1], true);
-                return new Expression(ss.First()[0]);
+                    return new Expression(ss.First()[1..], true);
+                return new Expression(ss.First());
             }
             Expression l;
             if (ss.First()[0] == '~')
-                l = new Expression(ss.First()[1], true);
+                l = new Expression(ss.First()[1..], true);
             else
-                l = new Expression(ss.First()[0]);
+                l = new Expression(ss.First());
             return new Expression(l, op, CreateChainSingleExpression(ss.Skip(1), op));
         }
 
