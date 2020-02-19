@@ -12,8 +12,8 @@ namespace LogicParser
         public static Operator OR = new Operator('v');
         public static Operator AND = new Operator('^');
         public static Operator IMPLIES = new Operator('>');
-        public static Operator NAND = new Operator('|');
-        public static Operator NOR = new Operator('V');
+        public static Operator NAND = new Operator('/');
+        public static Operator NOR = new Operator('\\');
         public static Operator XOR = new Operator('+');
 
         public Operator(char c)
@@ -23,8 +23,8 @@ namespace LogicParser
                 'v' => Operators.OR,
                 '^' => Operators.AND,
                 '>' => Operators.IMPLIES,
-                'V' => Operators.NOR,
-                '|' => Operators.NAND,
+                '\\' => Operators.NOR,
+                '/' => Operators.NAND,
                 '+' => Operators.XOR,
                 _ => throw new ArgumentException(),
             };
@@ -37,9 +37,9 @@ namespace LogicParser
                 Operators.AND => "^",
                 Operators.IMPLIES => "->",
                 Operators.OR => "v",
-                Operators.NOR => "↓",
-                Operators.NAND => "↑",
-                Operators.XOR => "⊕",
+                Operators.NOR => "\\",
+                Operators.NAND => "/",
+                Operators.XOR => "+",
                 _ => " ",
             };
         }

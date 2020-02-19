@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using static LogicParser.Operator;
 
 namespace LogicParser
@@ -40,7 +41,7 @@ namespace LogicParser
 
         internal List<Dictionary<string, bool>> BasicTruthTable()
         {
-            List<string> vars = string.Concat(ToString().Where(e => !"-~()v>^".Contains(e))).Split().Where(e => e != string.Empty).Distinct().ToList();
+            List<string> vars = string.Concat(ToString().Where(e => !"-~()v>^+/\\".Contains(e))).Split().Where(e => e != string.Empty).Distinct().ToList();
             List<Dictionary<string, bool>> r = new List<Dictionary<string, bool>>();
             for (int i = 0; i < (int)Math.Pow(2, vars.Count); i++)
             {
@@ -62,7 +63,7 @@ namespace LogicParser
                 foreach (KeyValuePair<string, bool> variable in row)
                 {
                     var t = variable.Value ? "T" : "F";
-                    Console.Write($"{variable.Key}: {t} | ");
+                    Console.Write($"{variable.Key}: {t} | ", Encoding.Unicode);
                 }
                 Console.WriteLine();
             }
@@ -143,12 +144,15 @@ namespace LogicParser
             }
             if (first.Length == 1)
             {
-                if (exp.Split("^").Length > 1 && exp.Split("v").Length > 1)
+                if (TooManyOps(exp, new List<char>() { 'v', '^', '/', '\\', '+' }))
                 {
                     throw new ArgumentException("Ambiguous Expression");
                 }
                 var ands = exp.Split("^");
                 var ors = exp.Split("v");
+                var nors = exp.Split("\\");
+                var nands = exp.Split("/");
+                var xors = exp.Split("+");
                 if (ands.Length > 1)
                 {
                     return CreateChainSingleExpression(ands, AND);
@@ -156,6 +160,18 @@ namespace LogicParser
                 else if (ors.Length > 1)
                 {
                     return CreateChainSingleExpression(ors, OR);
+                }
+                else if (nors.Length > 1)
+                {
+                    return CreateChainSingleExpression(nors, NOR);
+                }
+                else if (nands.Length > 1)
+                {
+                    return CreateChainSingleExpression(nands, NAND);
+                }
+                else if (xors.Length > 1)
+                {
+                    return CreateChainSingleExpression(xors, XOR);
                 }
                 else
                 {
@@ -191,7 +207,7 @@ namespace LogicParser
         {
             if (!(obj is Expression)) return false;
             Expression other = obj as Expression;
-            if (!TableEquals(TruthTable(generic:true), other.TruthTable(generic:true))) return false;
+            if (!TableEquals(TruthTable(generic: true), other.TruthTable(generic: true))) return false;
 
             return true;
         }
@@ -209,6 +225,20 @@ namespace LogicParser
                 if (!RowEquals(first[i], second[i])) return false;
             }
             return true;
+        }
+
+        public static bool TooManyOps(string s, List<char> ops)
+        {
+            bool hasOne = false;
+            foreach (char c in ops)
+            {
+                if (s.Split(c).Length > 1)
+                {
+                    if (hasOne) return true;
+                    hasOne = true;
+                }
+            }
+            return false;
         }
 
         public override int GetHashCode()

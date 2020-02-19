@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace LogicParser
 {
@@ -7,6 +8,7 @@ namespace LogicParser
     {
         static void Main(string[] _)
         {
+            
             while (true)
             {
                 Console.WriteLine("Enter a logical expression: ");
