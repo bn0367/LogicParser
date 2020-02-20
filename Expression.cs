@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Z3;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,9 +19,11 @@ namespace LogicParser
         public readonly List<Dictionary<string, bool>> TTable;
         public readonly List<Dictionary<string, bool>> GTable;
         public readonly List<Dictionary<string, bool>> BTable;
+        public readonly Context ctx;
 
         public Expression(string v, bool n = false)
         {
+            ctx = new Context();
             HasOperator = false;
             variable = v;
             not = n;
@@ -30,6 +33,7 @@ namespace LogicParser
         }
         public Expression(Expression l, Operator o, Expression r, bool n = false)
         {
+            ctx = new Context();
             Left = l;
             op = o;
             Right = r;
@@ -43,7 +47,7 @@ namespace LogicParser
         {
             if (!HasOperator)
             {
-                return vars[variable.ToString()];
+                return vars[variable.ToString()];// ^ not;
             }
             return op.Run(Left, Right, vars)();
 
@@ -85,14 +89,14 @@ namespace LogicParser
         {
             if (!HasOperator)
             {
-                return (not ? "~" : "") + variable.ToString();
+                return (not ? "~" : "") + variable;
             }
             bool lParen = Left.HasOperator;
             bool rParen = Left.HasOperator;
             return (lParen ? "(" : "") + Left.ToString() + (lParen ? ") " : " ") + op + (rParen ? " (" : " ") + Right.ToString() + (lParen ? ")" : "");
         }
 
-        internal List<Dictionary<string, bool>> TruthTable(bool generic = false, List < Dictionary<string, bool>> table = null)
+        internal List<Dictionary<string, bool>> TruthTable(bool generic = false, List<Dictionary<string, bool>> table = null)
         {
             if (table == null) table = BasicTruthTable();
             if (!generic)
@@ -187,7 +191,7 @@ namespace LogicParser
                 }
                 else
                 {
-                    return new Expression(exp);
+                    return (exp.StartsWith("~") ? new Expression(exp[1..], true) : new Expression(exp));
                 }
 
             }
@@ -265,6 +269,69 @@ namespace LogicParser
             var ran = new Random();
             if (length <= 1) return Parse(vars[ran.Next(vars.Length)] + " " + ops[ran.Next(ops.Length)] + " " + vars[ran.Next(vars.Length)]);
             else return new Expression(Parse(vars[ran.Next(vars.Length)] + " " + ops[ran.Next(ops.Length)] + " " + vars[ran.Next(vars.Length)]), new Operator(ops[ran.Next(ops.Length)][0]), RandomExpression(--length));
+        }
+
+        public BoolExpr GetBoolExpr(Expression original = null)
+        {
+            original ??= this;
+            //Context c = new Context();
+            //List<BoolExpr> bexp = new List<BoolExpr>();
+            //string.Concat(ToString().Where(e => !"-~()v>^+/\\".Contains(e))).Split().Where(e => e != string.Empty).Distinct().ToList().ForEach(e => bexp.Add(c.MkBoolConst(e)));
+            //Solver s = c.MkSolver();
+            if (!HasOperator)
+            {
+                return not ? original.ctx.MkNot(original.ctx.MkBoolConst(variable)) : original.ctx.MkBoolConst(variable);
+            }
+            return op.op switch
+            {
+                Operators.AND => original.ctx.MkAnd(Left.GetBoolExpr(original), Right.GetBoolExpr(original)),
+                Operators.OR => original.ctx.MkOr(Left.GetBoolExpr(original), Right.GetBoolExpr(original)),
+                Operators.NOR => original.ctx.MkOr(original.ctx.MkNot(Left.GetBoolExpr(original)), original.ctx.MkNot(Right.GetBoolExpr(original))),
+                Operators.XOR => original.ctx.MkOr(original.ctx.MkAnd(Left.GetBoolExpr(original), original.ctx.MkNot(Right.GetBoolExpr(original))), original.ctx.MkAnd(original.ctx.MkNot(Left.GetBoolExpr(original)), Right.GetBoolExpr(original))),
+                Operators.NAND => original.ctx.MkAnd(original.ctx.MkNot(Left.GetBoolExpr(original)), original.ctx.MkNot(Right.GetBoolExpr(original))),
+                Operators.IMPLIES => original.ctx.MkImplies(Left.GetBoolExpr(original), Right.GetBoolExpr(original)),
+                _ => null
+            };
+        }
+        public void Prove(BoolExpr e = null)
+        {
+            e ??= GetBoolExpr();
+            Solver s = ctx.MkSimpleSolver();
+            s.Assert(e);
+            Console.WriteLine($"{ToString()} is {s.Check()}");
+            Console.WriteLine($"simplified: {ExprToExpression(e.Simplify())}");
+        }
+
+        //broken until i implement negating a whole expression
+        /*public Expression ExprToExpression(Expr e)
+        {
+            Console.WriteLine($"{e} has {e.NumArgs} args");
+            if (e.NumArgs < 1 || e.IsVar)
+            {
+                return new Expression(e.ToString(), e.IsNot);
+            }
+            Operator temp = Z3OpToOperator(e);
+            if (temp != null) {
+                return new Expression(ExprToExpression(e.Arg(0)), temp, ExprToExpression(e.Arg(1)));
+            }
+            else
+            {
+                return new Expression(e.Arg(0), e.IsNot);
+            }
+        }*/
+        public static Operator Z3OpToOperator(Expr e)
+        {
+            if (e.IsNot)
+            {
+                if (e.IsOr) return NOR;
+                if (e.IsAnd) return NAND;
+                return null;
+            }
+            if (e.IsImplies) return IMPLIES;
+            if (e.IsXor) return XOR;
+            if (e.IsOr) return OR;
+            if (e.IsAnd) return AND;
+            throw new NotImplementedException("Unknown operator");
         }
     }
 }

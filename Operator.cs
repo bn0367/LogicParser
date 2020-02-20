@@ -7,14 +7,14 @@ namespace LogicParser
 
     class Operator
     {
-        readonly Operators op;
+        public readonly Operators op;
 
-        public static Operator OR = new Operator('v');
-        public static Operator AND = new Operator('^');
-        public static Operator IMPLIES = new Operator('>');
-        public static Operator NAND = new Operator('/');
-        public static Operator NOR = new Operator('\\');
-        public static Operator XOR = new Operator('+');
+        public static readonly Operator OR = new Operator('v');
+        public static readonly Operator AND = new Operator('^');
+        public static readonly Operator IMPLIES = new Operator('>');
+        public static readonly Operator NAND = new Operator('/');
+        public static readonly Operator NOR = new Operator('\\');
+        public static readonly Operator XOR = new Operator('+');
 
         public Operator(char c)
         {
