@@ -11,7 +11,7 @@ namespace LogicParser
     class Expression
     {
         public readonly bool HasOperator;
-        public readonly bool not;
+        public bool not;
         public readonly Operator op;
         public readonly Expression Left;
         public readonly Expression Right;
@@ -47,7 +47,7 @@ namespace LogicParser
         {
             if (!HasOperator)
             {
-                return vars[variable.ToString()];// ^ not;
+                return vars[variable] ^ not;
             }
             return op.Run(Left, Right, vars)();
 
@@ -71,18 +71,24 @@ namespace LogicParser
 
         public void PrintTable(List<Dictionary<string, bool>> table = null)
         {
-            if (table == null) { table = TTable; }
+            table ??= TruthTable();
             StringBuilder output = new StringBuilder();
             foreach (Dictionary<string, bool> row in table)
             {
                 foreach (KeyValuePair<string, bool> variable in row)
                 {
-                    var t = variable.Value ? "T" : "F";
+                    var t = variable.Value ^ not ? "T" : "F";
                     output.Append($"{variable.Key}: {t} | ");
                 }
                 output.Append("\n");
             }
             Console.WriteLine(output);
+        }
+
+        public static Expression Invert(Expression e)
+        {
+            e.not ^= true;
+            return e;
         }
 
         public override string ToString()
@@ -93,7 +99,7 @@ namespace LogicParser
             }
             bool lParen = Left.HasOperator;
             bool rParen = Left.HasOperator;
-            return (lParen ? "(" : "") + Left.ToString() + (lParen ? ") " : " ") + op + (rParen ? " (" : " ") + Right.ToString() + (lParen ? ")" : "");
+            return (not ? "~(" : "") + (lParen ? "(" : "") + Left.ToString() + (lParen ? ") " : " ") + op + (rParen ? " (" : " ") + Right.ToString() + (lParen ? ")" : "") + (not ? ")" : "");
         }
 
         internal List<Dictionary<string, bool>> TruthTable(bool generic = false, List<Dictionary<string, bool>> table = null)
@@ -153,7 +159,11 @@ namespace LogicParser
                         }
                         else
                         {
-                            return Parse(exp[1..i]);
+                            if (exp.StartsWith("~"))
+                            {
+                                return Invert(Parse(exp[(exp.IndexOf("(") + 1)..i]));
+                            }
+                            return Parse(exp[(exp.IndexOf("(") + 1)..i]);
                         }
                     }
                 }
@@ -298,8 +308,8 @@ namespace LogicParser
             e ??= GetBoolExpr();
             Solver s = ctx.MkSimpleSolver();
             s.Assert(e);
-            Console.WriteLine($"{ToString()} is {s.Check()}");
-            Console.WriteLine($"simplified: {ExprToExpression(e.Simplify())}");
+            Console.WriteLine($"{this} is {s.Check()}");
+            //Console.WriteLine($"simplified: {ExprToExpression(e.Simplify())}");
         }
 
         //broken until i implement negating a whole expression

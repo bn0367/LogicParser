@@ -48,19 +48,17 @@ namespace LogicParser
         {
             return () =>
             {
-                bool left = Left.Evaluate(vars);
-                left = Left.not ? !left : left;
-                bool right = Right.Evaluate(vars);
-                right = Right.not ? !right : right;
+                bool left = Left.Evaluate(vars) ^ (Left.HasOperator ? Left.not : false);
+                bool right = Right.Evaluate(vars) ^ (Right.HasOperator ? Right.not : false);
 
                 return op switch
                 {
-                    Operators.AND => left && right,
-                    Operators.OR => left || right,
-                    Operators.IMPLIES => left ? right : true,
+                    Operators.AND => (left && right),
+                    Operators.OR => (left || right),
+                    Operators.IMPLIES => (left ? right : true),
                     Operators.NOR => !(left || right),
                     Operators.NAND => !(left && right),
-                    Operators.XOR => (left && !right) || (right && !left),
+                    Operators.XOR => ((left && !right) || (right && !left)),
                     _ => false,
                 };
             };
