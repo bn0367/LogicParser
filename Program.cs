@@ -12,10 +12,13 @@ namespace LogicParser
             string inp;
             while ((inp = Console.ReadLine()) != "exit")
             {
-                Expression e = Expression.Parse(inp);
-                //Expression e = Expression.RandomExpression(5);
+                Expression e;
+                if(inp != "random") 
+                    e = Expression.Parse(inp);
+                else
+                    e = Expression.RandomExpression(5);
                 Console.WriteLine();
-                e.PrintTable(e.TruthTable());
+                e.PrintTable();
                 e.Prove();
                 Console.WriteLine("Enter a logical expression (or exit to exit):");
             }

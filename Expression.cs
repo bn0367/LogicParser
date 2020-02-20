@@ -292,7 +292,7 @@ namespace LogicParser
             {
                 return not ? original.ctx.MkNot(original.ctx.MkBoolConst(variable)) : original.ctx.MkBoolConst(variable);
             }
-            return op.op switch
+            BoolExpr output = (op.op switch
             {
                 Operators.AND => original.ctx.MkAnd(Left.GetBoolExpr(original), Right.GetBoolExpr(original)),
                 Operators.OR => original.ctx.MkOr(Left.GetBoolExpr(original), Right.GetBoolExpr(original)),
@@ -301,7 +301,12 @@ namespace LogicParser
                 Operators.NAND => original.ctx.MkAnd(original.ctx.MkNot(Left.GetBoolExpr(original)), original.ctx.MkNot(Right.GetBoolExpr(original))),
                 Operators.IMPLIES => original.ctx.MkImplies(Left.GetBoolExpr(original), Right.GetBoolExpr(original)),
                 _ => null
-            };
+            });
+            if (not)
+            {
+                output = original.ctx.MkNot(output);
+            }
+            return output;
         }
         public void Prove(BoolExpr e = null)
         {
@@ -309,26 +314,26 @@ namespace LogicParser
             Solver s = ctx.MkSimpleSolver();
             s.Assert(e);
             Console.WriteLine($"{this} is {s.Check()}");
-            //Console.WriteLine($"simplified: {ExprToExpression(e.Simplify())}");
+            Expression simplified = ExprToExpression(e.Simplify());
+            Console.WriteLine($"simplified: {simplified}");
         }
 
-        //broken until i implement negating a whole expression
-        /*public Expression ExprToExpression(Expr e)
+        public Expression ExprToExpression(Expr e)
         {
-            Console.WriteLine($"{e} has {e.NumArgs} args");
             if (e.NumArgs < 1 || e.IsVar)
             {
                 return new Expression(e.ToString(), e.IsNot);
             }
             Operator temp = Z3OpToOperator(e);
-            if (temp != null) {
+            if (temp != null)
+            {
                 return new Expression(ExprToExpression(e.Arg(0)), temp, ExprToExpression(e.Arg(1)));
             }
             else
             {
-                return new Expression(e.Arg(0), e.IsNot);
+                return Invert(ExprToExpression(e.Arg(0)));
             }
-        }*/
+        }
         public static Operator Z3OpToOperator(Expr e)
         {
             if (e.IsNot)
