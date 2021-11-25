@@ -1,5 +1,4 @@
-﻿using Microsoft.Z3;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,11 +18,10 @@ namespace LogicParser
         public readonly List<Dictionary<string, bool>> TTable;
         public readonly List<Dictionary<string, bool>> GTable;
         public readonly List<Dictionary<string, bool>> BTable;
-        public readonly Context ctx;
+        public int[,] KarnaughMap;
 
         public Expression(string v, bool n = false)
         {
-            ctx = new Context();
             HasOperator = false;
             variable = v;
             not = n;
@@ -33,7 +31,6 @@ namespace LogicParser
         }
         public Expression(Expression l, Operator o, Expression r, bool n = false)
         {
-            ctx = new Context();
             Left = l;
             op = o;
             Right = r;
@@ -280,73 +277,52 @@ namespace LogicParser
             if (length <= 1) return Parse(vars[ran.Next(vars.Length)] + " " + ops[ran.Next(ops.Length)] + " " + vars[ran.Next(vars.Length)]);
             else return new Expression(Parse(vars[ran.Next(vars.Length)] + " " + ops[ran.Next(ops.Length)] + " " + vars[ran.Next(vars.Length)]), new Operator(ops[ran.Next(ops.Length)][0]), RandomExpression(--length));
         }
-
-        public BoolExpr GetBoolExpr(Expression original = null)
+        public void Prove()
         {
-            original ??= this;
-            //Context c = new Context();
-            //List<BoolExpr> bexp = new List<BoolExpr>();
-            //string.Concat(ToString().Where(e => !"-~()v>^+/\\".Contains(e))).Split().Where(e => e != string.Empty).Distinct().ToList().ForEach(e => bexp.Add(c.MkBoolConst(e)));
-            //Solver s = c.MkSolver();
-            if (!HasOperator)
-            {
-                return not ? original.ctx.MkNot(original.ctx.MkBoolConst(variable)) : original.ctx.MkBoolConst(variable);
-            }
-            BoolExpr output = (op.op switch
-            {
-                Operators.AND => original.ctx.MkAnd(Left.GetBoolExpr(original), Right.GetBoolExpr(original)),
-                Operators.OR => original.ctx.MkOr(Left.GetBoolExpr(original), Right.GetBoolExpr(original)),
-                Operators.NOR => original.ctx.MkOr(original.ctx.MkNot(Left.GetBoolExpr(original)), original.ctx.MkNot(Right.GetBoolExpr(original))),
-                Operators.XOR => original.ctx.MkOr(original.ctx.MkAnd(Left.GetBoolExpr(original), original.ctx.MkNot(Right.GetBoolExpr(original))), original.ctx.MkAnd(original.ctx.MkNot(Left.GetBoolExpr(original)), Right.GetBoolExpr(original))),
-                Operators.NAND => original.ctx.MkAnd(original.ctx.MkNot(Left.GetBoolExpr(original)), original.ctx.MkNot(Right.GetBoolExpr(original))),
-                Operators.IMPLIES => original.ctx.MkImplies(Left.GetBoolExpr(original), Right.GetBoolExpr(original)),
-                _ => null
-            });
-            if (not)
-            {
-                output = original.ctx.MkNot(output);
-            }
-            return output;
-        }
-        public void Prove(BoolExpr e = null)
-        {
-            e ??= GetBoolExpr();
-            Solver s = ctx.MkSimpleSolver();
-            s.Assert(e);
-            Console.WriteLine($"{this} is {s.Check()}");
-            Expression simplified = ExprToExpression(e.Simplify());
-            Console.WriteLine($"simplified: {simplified}");
+            bool satisfiable = GTable.Any(e => e["conclusion"]);
+            Console.WriteLine(string.Format("{0} is {1}", this, satisfiable));
+            Console.WriteLine($"simplified: TODO");
         }
 
-        public Expression ExprToExpression(Expr e)
+        public bool Equivalent(Expression other)
         {
-            if (e.NumArgs < 1 || e.IsVar)
-            {
-                return new Expression(e.ToString(), e.IsNot);
-            }
-            Operator temp = Z3OpToOperator(e);
-            if (temp != null)
-            {
-                return new Expression(ExprToExpression(e.Arg(0)), temp, ExprToExpression(e.Arg(1)));
-            }
-            else
-            {
-                return Invert(ExprToExpression(e.Arg(0)));
-            }
+            if (other == null) return false;
+            if (other == this) return true;
+            return GTable.Select((e, i) => e["conclusion"] == other.GTable[i]["conclusion"]).All(e => e);
         }
-        public static Operator Z3OpToOperator(Expr e)
+        public void Simplify()
         {
-            if (e.IsNot)
+            int width = ((int)Math.Ceiling(TTable.Count / 2f));
+            int height = ((int)Math.Floor(TTable.Count / 2f));
+            KarnaughMap = new int[width, height];
+            var GSTable = GrayCodeTable();
+        }
+
+        public List<Dictionary<string, bool>> GrayCodeTable(List<Dictionary<string, bool>> table = null)
+        {
+            table ??= GTable;
+            var o = new List<Dictionary<string, bool>>();
+            var order = GrayCode(table.Count);
+            foreach (int i in order)
             {
-                if (e.IsOr) return NOR;
-                if (e.IsAnd) return NAND;
-                return null;
+                o.Add(table[i]);
             }
-            if (e.IsImplies) return IMPLIES;
-            if (e.IsXor) return XOR;
-            if (e.IsOr) return OR;
-            if (e.IsAnd) return AND;
-            throw new NotImplementedException("Unknown operator");
+            return o;
+        }
+
+        public static int[] GrayCode(int amount)
+        {
+            int current = 1;
+            int[] l1 = new[] { 0, 1 };
+            int[] l2;
+            while (l1.Length < amount)
+            {
+                l2 = l1.Reverse().ToArray();
+                int[] temp = l2.Select(e => e + ((int)Math.Pow(2, current))).ToArray();
+                l1 = l1.Concat(temp).ToArray();
+                current++;
+            }
+            return l1.Take(amount).ToArray();
         }
     }
 }

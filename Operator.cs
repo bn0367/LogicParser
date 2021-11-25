@@ -9,12 +9,12 @@ namespace LogicParser
     {
         public readonly Operators op;
 
-        public static readonly Operator OR = new Operator('v');
-        public static readonly Operator AND = new Operator('^');
-        public static readonly Operator IMPLIES = new Operator('>');
-        public static readonly Operator NAND = new Operator('/');
-        public static readonly Operator NOR = new Operator('\\');
-        public static readonly Operator XOR = new Operator('+');
+        public static readonly Operator OR = new('v');
+        public static readonly Operator AND = new('^');
+        public static readonly Operator IMPLIES = new('>');
+        public static readonly Operator NAND = new('/');
+        public static readonly Operator NOR = new('\\');
+        public static readonly Operator XOR = new('+');
 
         public Operator(char c)
         {
@@ -26,7 +26,7 @@ namespace LogicParser
                 '\\' => Operators.NOR,
                 '/' => Operators.NAND,
                 '+' => Operators.XOR,
-                _ => throw new ArgumentException(),
+                _ => throw new ArgumentException("Invalid operator!"),
             };
         }
 
@@ -48,14 +48,14 @@ namespace LogicParser
         {
             return () =>
             {
-                bool left = Left.Evaluate(vars) ^ (Left.HasOperator ? Left.not : false);
-                bool right = Right.Evaluate(vars) ^ (Right.HasOperator ? Right.not : false);
+                bool left = Left.Evaluate(vars) ^ (Left.HasOperator && Left.not);
+                bool right = Right.Evaluate(vars) ^ (Right.HasOperator && Right.not);
 
                 return op switch
                 {
                     Operators.AND => (left && right),
                     Operators.OR => (left || right),
-                    Operators.IMPLIES => (left ? right : true),
+                    Operators.IMPLIES => (!left || right),
                     Operators.NOR => !(left || right),
                     Operators.NAND => !(left && right),
                     Operators.XOR => ((left && !right) || (right && !left)),
